@@ -1,6 +1,7 @@
 import random
 import bisect
-from individualclass import Individual
+from individual_class import Individual
+from individual_class import IndividualPSO
 # ----------------------------------------------- #
 # GA
 # ----------------------------------------------- #

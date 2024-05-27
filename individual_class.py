@@ -1,6 +1,7 @@
 import numpy as np
 from abc import ABC, abstractmethod
 import random
+import sys
 
 class Individual(ABC):
   @abstractmethod
@@ -95,6 +96,7 @@ class IndividualDE(Individual):
     return self.__recombination(mut_pos)
 
 class IndividualPSO(Individual):
+  gi = None
   def __init__(self,X,w,C1,C2,P=None,v=None):
     self.setPosition(X)
     self.__w = w
@@ -110,17 +112,25 @@ class IndividualPSO(Individual):
       self.__v = v
 
   def cloud_particle_loop(self,ind_list):
-
-    if self.getFitness() < self._fitness_function(self.__P):
+    if self.getFitness() <= self._fitness_function(self.__P):
       self.__P = self._X
-      if self.getFitness() < self._fitness_function(IndividualPSO.gi):
-        IndividualPSO.gi = self._X
+      if IndividualPSO.gi is None:
+        IndividualPSO.gi = min(ind_list,key=lambda x: x.getFitness())
+      if self.getFitness() < IndividualPSO.gi.getFitness():
+        IndividualPSO.gi = self
 
-    for j in range(0,len(ind_list)):
-      r1 = random.random()
-      r2 = random.random()
-      param1 = np.subtract(self.__P,ind_list[j]._X)*(self.__C1*r1)
-      param2 = np.subtract(IndividualPSO.gi,ind_list[j]._X)*(self.__C2*r2)
-      self.__v = self.__v*self.__w + param1 + param2
+
+    r1 = np.random.random_sample(size=len(self._X))
+    r2 = np.random.random_sample(size=len(self._X))
+    param1 = (self.__P-self._X)*(self.__C1*r1)
+    param2 = (IndividualPSO.gi._X - self._X)*(self.__C2*r2)
+    self.__v = self.__v*self.__w + param1 + param2
     new_pos = self._X + self.__v
+
+    # np.set_printoptions(precision=3)
+    # print([self.__v,self._X,self.__P,param1,param2])
+    #print("Aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+    # print([self._X,self.__P,self.__v,IndividualPSO.gi._X])
+
+
     return type(self)(new_pos,self.__w,self.__C1,self.__C2,self.__P,self.__v)

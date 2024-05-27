@@ -14,7 +14,7 @@ def contour_over_population(generation_data,title,ff,map_size):
   ax.contour(contour_X, contour_Y, contour_Z, levels=80, cmap='rainbow', alpha=0.4,zorder=0)
   rec = patches.Rectangle((-map_size/2, -map_size/2), map_size, map_size, linewidth=1, edgecolor='r', facecolor='none')
   ax.add_patch(rec)
-  ax.autoscale(False) # To avoid that the scatter changes limits
+  # ax.autoscale(False) # To avoid that the scatter changes limits
   for i, generation in enumerate(generation_data):
     redness = i/len(generation_data)
     alpha = 0.2 + 0.8*i/len(generation_data)
@@ -22,6 +22,7 @@ def contour_over_population(generation_data,title,ff,map_size):
     y = [p.get_data()[1] for p in generation]
     ax.scatter(x,y, marker='o', color=(redness,0.0,0.0),alpha=alpha,zorder=100)
   plt.title(title)
+  # plt.autoscale()
   plt.xlabel('x')
   plt.ylabel('y')
   plt.show()
@@ -57,7 +58,7 @@ def store_fitness_pymoo(generation_data,final_fitness_table,scenario_name,num_te
 def plot_fitness_over_generation(final_fitness_table):
 
     fig, axs = plt.subplots(1, 2, figsize=(16, 6))
-   
+
     for title, values in final_fitness_table["mini"].items():
       axs[0].plot(list(range(0,len(values))), values, label=title, linestyle='-')
     axs[0].legend()
