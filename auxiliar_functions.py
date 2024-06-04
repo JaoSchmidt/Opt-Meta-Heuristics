@@ -105,3 +105,27 @@ def pso_2_bin(ind_list):
   for i in range(0,len(ind_list)):
     ind_list[i] = ind_list[i].cloud_particle_loop(ind_list)
   return ind_list[:]
+
+# ----------------------------------------------- #
+# DEEPSO
+# ----------------------------------------------- #
+
+def deepso_rand_1(ind_list):
+  for i in range(0,len(ind_list)):
+    ind_list[i] = ind_list[i].cloud_particle_loop(ind_list)
+  return ind_list[:]
+
+def deepso_memory_best(ind_list):
+  for i in range(0,len(ind_list)):
+    ind_list[i] = ind_list[i].cloud_particle_loop(ind_list)
+  return ind_list[:]
+
+def deepso_recombination(ind_list):
+  for i in range(0,len(ind_list)):
+    ind_list[i] = ind_list[i].cloud_particle_loop(ind_list)
+  return ind_list[:]
+
+def deepso_recombination_memory_best(ind_list):
+  for i in range(0,len(ind_list)):
+    ind_list[i] = ind_list[i].cloud_particle_loop(ind_list)
+  return ind_list[:]

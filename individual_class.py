@@ -19,7 +19,7 @@ class Individual(ABC):
     self._setFitness()
 
   def print(self):
-    return print([self._X,self._current_min])
+    print([self._X,self._current_min])
 
   def get_data(self):
     out = np.append(self._X,self._current_min)
@@ -127,10 +127,49 @@ class IndividualPSO(Individual):
     self.__v = self.__v*self.__w + param1 + param2
     new_pos = self._X + self.__v
 
-    # np.set_printoptions(precision=3)
-    # print([self.__v,self._X,self.__P,param1,param2])
-    #print("Aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
-    # print([self._X,self.__P,self.__v,IndividualPSO.gi._X])
-
-
     return type(self)(new_pos,self.__w,self.__C1,self.__C2,self.__P,self.__v)
+
+class IndividualDEEPSO(Individual):
+  gi = None
+  tmut = 0.5
+  tcom = 0.5
+  def __init__(self,X,wi0,wa0,wc0,v,P):
+    self.setPosition(X)
+    self.__wi = wi0
+    self.__wa = wa0
+    self.__wc = wc0
+    if P is None:
+      self.__P = X
+    else:
+      self.__P = P
+    self.__v = v
+
+  def mutation_w(self,w):
+    w = w*[1+IndividualDEEPSO.tmut*np.random.normal(0,1,size=len(self._X))]
+    return w
+
+  def rand_1(self,ind_list):
+    if self.getFitness() <= self._fitness_function(self.__P):
+      self.__P = self._X
+      if IndividualDEEPSO.gi is None:
+        IndividualDEEPSO.gi = min(ind_list,key=lambda x: x.getFitness())
+      if self.getFitness() < IndividualDEEPSO.gi.getFitness():
+        IndividualDEEPSO.gi = self
+
+    C = np.zeros(len(self._X))
+    for i in range(0,len(C)):
+      if C[i] < IndividualDEEPSO.tcom:
+        C[i] = 1
+
+    self.__wi = self.mutation_w(self.__wi)
+    self.__wa = self.mutation_w(self.__wa)
+    self.__wc = self.mutation_w(self.__wc)
+
+    param1 = self.__wa*(self.__P-self._X)
+
+    param2 = self.__wc*C*(IndividualDEEPSO.gi._X - self._X)
+
+    self.__v = self.__v*self.__wi + param1 + param2
+    new_pos = self._X + self.__v
+
+    return type(self)(new_pos,self.__wi,self.__wa,self.__wc,self.__P,self.__v)

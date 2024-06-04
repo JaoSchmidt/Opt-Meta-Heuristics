@@ -53,7 +53,16 @@ def store_fitness_pymoo(generation_data,final_fitness_table,scenario_name,num_te
       for x in generation_data["min"]:
         final_fitness_table["mini"][scenario_name][i] += x/num_tests
       for x in generation_data["avg"]:
-        final_fitness_table["mini"][scenario_name][i] += x/num_tests
+        final_fitness_table["mean"][scenario_name][i] += x/num_tests
+
+def store_fitness_pyswarm(generation_pos,fitness_fn,final_fitness_table,scenario_name,num_tests):
+  for i,generation in enumerate(generation_pos):
+    if len(final_fitness_table["mini"][scenario_name]) < len(generation_pos):
+      final_fitness_table["mini"][scenario_name].append(min([fitness_fn(x) for x in generation])/num_tests)
+      final_fitness_table["mean"][scenario_name].append(sum([fitness_fn(x) for x in generation])/num_tests)
+    else:
+      final_fitness_table["mini"][scenario_name][i] = (min([fitness_fn(x) for x in generation])/num_tests)
+      final_fitness_table["mean"][scenario_name][i] = (sum([fitness_fn(x) for x in generation])/num_tests)
 
 def plot_fitness_over_generation(final_fitness_table):
 
