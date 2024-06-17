@@ -42,10 +42,6 @@ For the population stuff
 - `map_size`: total size of the domain map. This is used to spread the initial generation
 - `center`: center of the initial "spread" of the population, use this to create a less clean number as the starting point. In my case, I use inside rosenbrock the algorithm finding $x* = (1,1)$ too quickly.
 
-## EDIT: Small error on the main algorithm
-
-There is an error inside the algorithm loop. It doesn't reset the value of the best global variable for each iteration. This can be easily fixed with adding `Individual.gi = None` inside the test loop.
-
 ## Individual 
 
 The abstract **Individual** class inside `individual_class.py` is responsible to store its chromosomes 
