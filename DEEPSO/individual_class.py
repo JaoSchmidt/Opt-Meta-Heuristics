@@ -115,7 +115,6 @@ class IndividualPSO(Individual):
     if self.getFitness() <= self._fitness_function(self.__P):
       self.__P = self._X
       if IndividualPSO.gi is None:
-        print("IndividualPSO.gi is none")
         IndividualPSO.gi = min(ind_list,key=lambda x: x.getFitness())
       if self.getFitness() < IndividualPSO.gi.getFitness():
         IndividualPSO.gi = self
@@ -134,7 +133,7 @@ class IndividualDEEPSO(Individual):
   gi = None
   tmut = 0
   tcom = 0
-  def __init__(self,X,wi0,wa0,wc0,v,p):
+  def __init__(self,X,wi0=0.5,wa0=0.5,wc0=0.5,v=None,p=None):
     self.setPosition(X)
     self.__wi = wi0
     self.__wa = wa0
@@ -150,7 +149,6 @@ class IndividualDEEPSO(Individual):
     if self.getFitness() <= self._fitness_function(self.__P):
       self.__P = self._X
       if IndividualDEEPSO.gi is None:
-        print("IndividualDEEPSO.gi is none")
         IndividualDEEPSO.gi = min(ind_list,key=lambda x: x.getFitness())
       if self.getFitness() < IndividualDEEPSO.gi.getFitness():
         IndividualDEEPSO.gi = self

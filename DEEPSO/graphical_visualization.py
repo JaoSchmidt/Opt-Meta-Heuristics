@@ -3,16 +3,16 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 
-def contour_over_population(generation_data,title,ff,map_size):
+def contour_over_population(generation_data,title,ff,bounds):
 
-  x = np.linspace(-map_size*1.2/2,map_size*1.2/2,200)
-  y = np.linspace(-map_size*1.2/2,map_size*1.2/2,200)
+  x = np.linspace(bounds[0]*1.2,bounds[1]*1.2,200)
+  y = np.linspace(bounds[0]*1.2,bounds[1]*1.2,200)
   contour_X, contour_Y = np.meshgrid(x,y)
   contour_Z = ff((contour_X,contour_Y))
 
   _, ax = plt.subplots(figsize=(10, 10))
   ax.contour(contour_X, contour_Y, contour_Z, levels=80, cmap='rainbow', alpha=0.4,zorder=0)
-  rec = patches.Rectangle((-map_size/2, -map_size/2), map_size, map_size, linewidth=1, edgecolor='r', facecolor='none')
+  rec = patches.Rectangle((bounds[0], bounds[0]), bounds[1]*2, bounds[1]*2, linewidth=1, edgecolor='r', facecolor='none')
   ax.add_patch(rec)
   # ax.autoscale(False) # To avoid that the scatter changes limits
   for i, generation in enumerate(generation_data):

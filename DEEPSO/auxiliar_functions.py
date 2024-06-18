@@ -118,16 +118,27 @@ def deepso_rand_1(ind_list, tmut, tcom):
   return ind_list[:]
 
 def deepso_memory_best(ind_list):
-  for i in range(0,len(ind_list)):
-    ind_list[i] = ind_list[i].cloud_particle_loop(ind_list)
-  return ind_list[:]
+  pass
+  # for i in range(0,len(ind_list)):
+  #   ind_list[i] = ind_list[i].cloud_particle_loop(ind_list)
+  # return ind_list[:]
 
 def deepso_recombination(ind_list):
-  for i in range(0,len(ind_list)):
-    ind_list[i] = ind_list[i].cloud_particle_loop(ind_list)
-  return ind_list[:]
+  pass
+  # for i in range(0,len(ind_list)):
+  #   ind_list[i] = ind_list[i].cloud_particle_loop(ind_list)
+  # return ind_list[:]
 
 def deepso_recombination_memory_best(ind_list):
-  for i in range(0,len(ind_list)):
-    ind_list[i] = ind_list[i].cloud_particle_loop(ind_list)
-  return ind_list[:]
+  pass
+  # for i in range(0,len(ind_list)):
+  #   ind_list[i] = ind_list[i].cloud_particle_loop(ind_list)
+  # return ind_list[:]
+
+# ----------------------------------------------- #
+# Hill Climbing
+# ----------------------------------------------- #
+
+def hill_climb(generated_population):
+  best = min(generated_population,key=lambda x: x.getFitness())
+  return best
