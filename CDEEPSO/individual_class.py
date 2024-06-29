@@ -22,8 +22,14 @@ class Individual(ABC):
     print([self._X,self._current_min])
 
   def get_data(self):
-    out = np.append(self._X,self._current_min)
+    out = {}
+    out["X"] = self._X
+    out["Z"] = self._current_min
     return out
+
+  def is_within_bounds(self, center=[0,0], bounds=[-5,5]):
+    pos = self._X - np.array(center)
+    return np.all(pos >= bounds[0]) and np.all(pos <= bounds[1])
 
 class IndividualGA(Individual):
   def __init__(self,X,alpha):
@@ -111,21 +117,40 @@ class IndividualPSO(Individual):
     else:
       self.__v = v
 
-  def cloud_particle_loop(self,ind_list):
+  def get_data(self):
+    out = {}
+    out["X"] = self._X
+    out["Z"] = self._current_min
+    out["V"] = self.__v
+    return out
+
+  def cloud_particle_loop(self,ind_list, bounds, vbounds):
+    # Local and global bests
     if self.getFitness() <= self._fitness_function(self.__P):
       self.__P = self._X
       if IndividualPSO.gi is None:
         IndividualPSO.gi = min(ind_list,key=lambda x: x.getFitness())
-      if self.getFitness() < IndividualPSO.gi.getFitness():
+      if self.getFitness() <= IndividualPSO.gi.getFitness():
         IndividualPSO.gi = self
+        return self
 
-
+    # parameters
     r1 = np.random.random_sample(size=len(self._X))
     r2 = np.random.random_sample(size=len(self._X))
     param1 = (self.__P-self._X)*(self.__C1*r1)
     param2 = (IndividualPSO.gi._X - self._X)*(self.__C2*r2)
-    self.__v = self.__v*self.__w + param1 + param2
-    new_pos = self._X + self.__v
+
+    # velocity
+    if vbounds is None:
+      self.__v = self.__v * self.__w + param1 + param2
+    else:
+      self.__v = np.clip(self.__v*self.__w + param1 + param2,vbounds[0],vbounds[1])
+
+    # position
+    if bounds is None:
+      new_pos = self._X + self.__v
+    else:
+      new_pos = np.clip(self._X + self.__v,bounds[0],bounds[1])
 
     return type(self)(new_pos,self.__w,self.__C1,self.__C2,self.__P,self.__v)
 
@@ -141,18 +166,40 @@ class IndividualDEEPSO(Individual):
     self.__P = p
     self.__v = v
 
-  def mutation_w(self,w, tmut):
-    w = np.clip(w + tmut*np.random.normal(),0,1)
+  def mutation_w(self,w, tmut, wBounds):
+    w = np.clip(w + tmut*np.random.normal(),wBounds[0],wBounds[1])
     return w
 
-  def rand_1(self,ind_list, tmut, tcom):
+  def get_data(self):
+    out = {}
+    out["X"] = self._X
+    out["Z"] = self._current_min
+    out["V"] = self.__v
+    return out
+
+  def print(self):
+    out = {}
+    out["X"] = self._X
+    out["Z"] = self._current_min
+    out["V"] = self.__v
+    out["wi"] = self.__wi
+    out["wa"] = self.__wa
+    out["wc"] = self.__wc
+    out["P-X"] = self.__P-self._X
+    out["G-X"] = IndividualDEEPSO.gi._X-self._X
+    print(out)
+
+  def rand_1(self,ind_list, tmut, tcom, bounds=None, vBounds=None, wBounds=None):
+    if IndividualDEEPSO.gi is None:
+      IndividualDEEPSO.gi = min(ind_list,key=lambda x: x.getFitness())
     if self.getFitness() <= self._fitness_function(self.__P):
       self.__P = self._X
-      if IndividualDEEPSO.gi is None:
-        IndividualDEEPSO.gi = min(ind_list,key=lambda x: x.getFitness())
-      if self.getFitness() <= IndividualDEEPSO.gi.getFitness():
+      if self.getFitness() < IndividualDEEPSO.gi.getFitness():
         IndividualDEEPSO.gi = self
         return self
+
+    if not self.is_within_bounds(center=[1,1],bounds=[-0.05,0.05]) and self.__temp > 60:
+      self.print()
 
     C = np.random.random_sample(size=len(self._X))
     for i in range(0,len(C)):
@@ -161,13 +208,83 @@ class IndividualDEEPSO(Individual):
       else:
         C[i] = 0
 
-    self.__wi = self.mutation_w(self.__wi,tmut)
-    self.__wa = self.mutation_w(self.__wa,tmut)
-    self.__wc = self.mutation_w(self.__wc,tmut)
+    # Ws
+    self.__wi = self.mutation_w(self.__wi,tmut, wBounds)
+    self.__wa = self.mutation_w(self.__wa,tmut, wBounds)
+    self.__wc = self.mutation_w(self.__wc,tmut, wBounds)
 
+    # parameters
     param1 = self.__wa*(self.__P-self._X)
     param2 = self.__wc*C*(IndividualDEEPSO.gi._X - self._X)
-    self.__v = np.clip(self.__v*self.__wi + param1 + param2,-0.5,0.5)
-    new_pos = np.clip(self._X + self.__v,-5,5)
+
+    # velocity
+    if vBounds is None:
+      self.__v = self.__v*self.__wi + param1 + param2
+    else:
+      self.__v = np.clip(self.__v*self.__wi + param1 + param2,vBounds[0],vBounds[1])
+
+    # position
+    if bounds is None:
+      new_pos = self._X + self.__v
+    else:
+      new_pos = np.clip(self._X + self.__v,bounds[0],bounds[1])
 
     return type(self)(new_pos,self.__wi,self.__wa,self.__wc,self.__v,self.__P)
+
+class IndividualCDEEPSO(Individual):
+  gi = None
+  def __init__(self,X,wi0=0.5,wa0=0.5,wc0=0.5,v=None,p=None):
+    self.setPosition(X)
+    self.__wi = wi0
+    self.__wa = wa0
+    self.__wc = wc0
+    self.__P = p
+    self.__v = v
+
+  def mutation_w(self,w, tmut):
+    w = np.clip(w + tmut*np.random.normal(),0,2)
+    return w
+
+  def rand_1(self,ind_list, tmut, tcom, bounds=None, vBounds=None, wBounds=None):
+    if IndividualCDEEPSO.gi is None:
+      IndividualCDEEPSO.gi = min(ind_list,key=lambda x: x.getFitness())
+    if self.getFitness() <= self._fitness_function(self.__P):
+      self.__P = self._X
+      if self.getFitness() < IndividualCDEEPSO.gi.getFitness():
+        IndividualCDEEPSO.gi = self
+        return self
+
+    # if not self.is_within_bounds(center=[1,1],bounds=[-0.05,0.05]) and self.__temp > 60:
+    #   self.print()
+
+    C = np.random.random_sample(size=len(self._X))
+    for i in range(0,len(C)):
+      if C[i] < tcom:
+        C[i] = 1
+      else:
+        C[i] = 0
+
+    # Ws
+    self.__wi = self.mutation_w(self.__wi,tmut, wBounds)
+    self.__wa = self.mutation_w(self.__wa,tmut, wBounds)
+    self.__wc = self.mutation_w(self.__wc,tmut, wBounds)
+
+    # parameters
+    param1 = self.__wa*(self.__P-self._X)
+    param2 = self.__wc*C*(IndividualCDEEPSO.gi._X - self._X)
+
+    # velocity
+    if vBounds is None:
+      self.__v = self.__v*self.__wi + param1 + param2
+    else:
+      self.__v = np.clip(self.__v*self.__wi + param1 + param2,vBounds[0],vBounds[1])
+
+    # position
+    if bounds is None:
+      new_pos = self._X + self.__v
+    else:
+      new_pos = np.clip(self._X + self.__v,bounds[0],bounds[1])
+
+    return type(self)(new_pos,self.__wi,self.__wa,self.__wc,self.__v,self.__P, temp=self.__temp+1)
+
+
