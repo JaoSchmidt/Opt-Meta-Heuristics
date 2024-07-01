@@ -4,6 +4,9 @@ import random
 import sys
 
 class Individual(ABC):
+  def __init__(X):
+    self.setPosition(X)
+
   @abstractmethod
   def _fitness_function(self,X):
     pass
@@ -21,7 +24,7 @@ class Individual(ABC):
   def print(self):
     print([self._X,self._current_min])
 
-  def get_data(self):
+  def to_dict(self):
     out = {}
     out["X"] = self._X
     out["Z"] = self._current_min
@@ -155,10 +158,7 @@ class IndividualPSO(Individual):
     return type(self)(new_pos,self.__w,self.__C1,self.__C2,self.__P,self.__v)
 
 class IndividualDEEPSO(Individual):
-  gi = None
-  tmut = 0
-  tcom = 0
-  def __init__(self,X,wi0=0.5,wa0=0.5,wc0=0.5,v=None,p=None):
+  def __init__(self,X,wi0,wa0,wc0,v,p):
     self.setPosition(X)
     self.__wi = wi0
     self.__wa = wa0
@@ -170,7 +170,14 @@ class IndividualDEEPSO(Individual):
     w = np.clip(w + tmut*np.random.normal(),wBounds[0],wBounds[1])
     return w
 
-  def get_data(self):
+  def toJSON(self):
+    return json.dumps(
+      self,
+      default=lambda o: o.__dict__,
+      sort_keys=True,
+      indent=4)
+
+  def to_dict(self):
     out = {}
     out["X"] = self._X
     out["Z"] = self._current_min
@@ -186,20 +193,17 @@ class IndividualDEEPSO(Individual):
     out["wa"] = self.__wa
     out["wc"] = self.__wc
     out["P-X"] = self.__P-self._X
-    out["G-X"] = IndividualDEEPSO.gi._X-self._X
     print(out)
 
-  def rand_1(self,ind_list, tmut, tcom, bounds=None, vBounds=None, wBounds=None):
-    if IndividualDEEPSO.gi is None:
-      IndividualDEEPSO.gi = min(ind_list,key=lambda x: x.getFitness())
-    if self.getFitness() <= self._fitness_function(self.__P):
+  def rand_1(self,gb_wrapper,tmut, tcom, bounds=None, vBounds=None, wBounds=None):
+    if self.getFitness() < self._fitness_function(self.__P):
       self.__P = self._X
-      if self.getFitness() < IndividualDEEPSO.gi.getFitness():
-        IndividualDEEPSO.gi = self
+      if self.getFitness() < gb_wrapper[0].getFitness():
+        gb_wrapper[0] = self
         return self
 
-    if not self.is_within_bounds(center=[1,1],bounds=[-0.05,0.05]) and self.__temp > 60:
-      self.print()
+    # if not self.is_within_bounds(center=[1,1],bounds=[-0.05,0.05]) and self.__temp > 60:
+    #   self.print()
 
     C = np.random.random_sample(size=len(self._X))
     for i in range(0,len(C)):
@@ -215,19 +219,12 @@ class IndividualDEEPSO(Individual):
 
     # parameters
     param1 = self.__wa*(self.__P-self._X)
-    param2 = self.__wc*C*(IndividualDEEPSO.gi._X - self._X)
+    param2 = self.__wc*C*(gb_wrapper[0]._X - self._X)
 
     # velocity
-    if vBounds is None:
-      self.__v = self.__v*self.__wi + param1 + param2
-    else:
-      self.__v = np.clip(self.__v*self.__wi + param1 + param2,vBounds[0],vBounds[1])
-
+    self.__v = np.clip(self.__v*self.__wi + param1 + param2,*vBounds)
     # position
-    if bounds is None:
-      new_pos = self._X + self.__v
-    else:
-      new_pos = np.clip(self._X + self.__v,bounds[0],bounds[1])
+    new_pos = np.clip(self._X + self.__v,*bounds)
 
     return type(self)(new_pos,self.__wi,self.__wa,self.__wc,self.__v,self.__P)
 

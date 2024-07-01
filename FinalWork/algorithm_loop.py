@@ -18,7 +18,7 @@ from individual_class import IndividualPSO
 
 def initial_random_pop(pop_size, bounds, numpy_array=True, dimensions=2, seed=None, center = None):
   if seed is not None:
-        np.random.seed(seed)
+    np.random.seed(seed)
   points = np.random.uniform(bounds[0],bounds[1],size=(pop_size,dimensions))
 
   # Move the entire thing to a specific center
