@@ -48,22 +48,25 @@ def plot_fitness_over_scenarios(table_scenario: dict, scenario_name: str):
   axs[0,1].set_ylabel('fitness')
   axs[0,1].set_yscale('log')
 
-  for title, values in table_scenario.items():
-    axs[1,0].boxplot(values["fitness_last"], label=title, showfliers=True)
+  # for title, values in table_scenario.items():
+  axs[1,0].boxplot([table_scenario[s]["fitness_last"] for s in table_scenario], labels=[s for s in table_scenario], showfliers=True)
   axs[1,0].set_ylabel('fitness')
   axs[1,0].set_xlabel('scenario')
   axs[1,0].set_yscale('log')
   axs[1,0].set_title('Last Gen Fitness (all tests)')
 
-  # last scenario only
+  # print boxplot of positions for last scenario only
   values = np.array(table_scenario[scenario_name]["position_last"])
-  # num_dimensions = len(values[0]) # extracted sample
   num_dimensions = values.shape[1]
   boxplot_data = [values[:, d] for d in range(num_dimensions)]
-  axs[1,1].boxplot(boxplot_data, labels=[f'd{i+1}' for i in range(num_dimensions)], showfliers=True)
+  # print(boxplot_data)
+  if num_dimensions == 2:
+    axs[1,1].boxplot(boxplot_data, labels=["X","Y"], showfliers=True)
+  else:
+    axs[1,1].boxplot(boxplot_data, labels=[f'd{i+1}' for i in range(num_dimensions)], showfliers=True)
   axs[1,1].set_ylabel('position')
-  axs[1,1].set_xlabel('scenario')
-  axs[1,1].set_title('Fitness Boxplots ')
+  axs[1,1].set_xlabel('dimensions')
+  axs[1,1].set_title('Positions for scenario "'+scenario_name+'"')
   plt.show()
 
 # ----------------------------------------------- #
@@ -134,23 +137,23 @@ def collect_data_on_tests(scenario_data,table_scenario: dict, table_test = None,
   position_last = table_scenario["position_last"]
 
   # getting mean and minimum of each generation
-  if not mini: # if it's the first time collecting data
+  if not mini: # if it's the first time collecting data, then append data
     for generation in scenario_data:
       mini.append(min(generation,key=lambda x: x.getFitness()).getFitness())
       mean.append(sum([ind.getFitness() for ind in generation])/len(generation))
-  else:
+  else: # else sum with existing data
     for i,generation in enumerate(scenario_data):
       mini[i] += min(generation,key=lambda x: x.getFitness()).getFitness()
       mean[i] += sum([ind.getFitness() for ind in generation])/len(generation)
 
   # get fitness and position of last generation
   last_gen = scenario_data[len(scenario_data)-1]
-  for ind in last_gen:
+  for ind in last_gen: # for all Individuals of the last generation
     d = ind.to_dict()
-    fitness_last.append(d["Z"])
-    position_last.append(d["X"])
+    fitness_last.append(d["Z"]) # collect their fitness
+    position_last.append(d["X"]) # and collect their positions
 
-  # all min fitness of all scenario in case it's needed, pls clean afterwards
+  # here, I collect stuff to be used to visualize all tests, instead of the scenario
   if table_test is not None and test_num != -1:
     table_test["test "+str(test_num)] = {}
     table_test["test "+str(test_num)]["mini"] = []

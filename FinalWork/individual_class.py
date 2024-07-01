@@ -170,13 +170,6 @@ class IndividualDEEPSO(Individual):
     w = np.clip(w + tmut*np.random.normal(),wBounds[0],wBounds[1])
     return w
 
-  def toJSON(self):
-    return json.dumps(
-      self,
-      default=lambda o: o.__dict__,
-      sort_keys=True,
-      indent=4)
-
   def to_dict(self):
     out = {}
     out["X"] = self._X
@@ -228,31 +221,10 @@ class IndividualDEEPSO(Individual):
 
     return type(self)(new_pos,self.__wi,self.__wa,self.__wc,self.__v,self.__P)
 
-class IndividualCDEEPSO(Individual):
-  gi = None
-  def __init__(self,X,wi0=0.5,wa0=0.5,wc0=0.5,v=None,p=None):
-    self.setPosition(X)
-    self.__wi = wi0
-    self.__wa = wa0
-    self.__wc = wc0
-    self.__P = p
-    self.__v = v
-
-  def mutation_w(self,w, tmut):
-    w = np.clip(w + tmut*np.random.normal(),0,2)
-    return w
-
-  def rand_1(self,ind_list, tmut, tcom, bounds=None, vBounds=None, wBounds=None):
-    if IndividualCDEEPSO.gi is None:
-      IndividualCDEEPSO.gi = min(ind_list,key=lambda x: x.getFitness())
-    if self.getFitness() <= self._fitness_function(self.__P):
-      self.__P = self._X
-      if self.getFitness() < IndividualCDEEPSO.gi.getFitness():
-        IndividualCDEEPSO.gi = self
-        return self
-
-    # if not self.is_within_bounds(center=[1,1],bounds=[-0.05,0.05]) and self.__temp > 60:
-    #   self.print()
+  def xr_mem(self,gb_wrapper,Ir,tmut, tcom, bounds=None, vBounds=None, wBounds=None):
+    if self.getFitness() < gb_wrapper[0].getFitness():
+      gb_wrapper[0] = self
+      return self
 
     C = np.random.random_sample(size=len(self._X))
     for i in range(0,len(C)):
@@ -267,21 +239,65 @@ class IndividualCDEEPSO(Individual):
     self.__wc = self.mutation_w(self.__wc,tmut, wBounds)
 
     # parameters
-    param1 = self.__wa*(self.__P-self._X)
-    param2 = self.__wc*C*(IndividualCDEEPSO.gi._X - self._X)
+    param1 = self.__wa*(Ir._X-self._X)
+    param2 = self.__wc*C*(gb_wrapper[0]._X - self._X)
 
     # velocity
-    if vBounds is None:
-      self.__v = self.__v*self.__wi + param1 + param2
-    else:
-      self.__v = np.clip(self.__v*self.__wi + param1 + param2,vBounds[0],vBounds[1])
-
+    self.__v = np.clip(self.__v*self.__wi + param1 + param2,*vBounds)
     # position
-    if bounds is None:
-      new_pos = self._X + self.__v
-    else:
-      new_pos = np.clip(self._X + self.__v,bounds[0],bounds[1])
+    new_pos = np.clip(self._X + self.__v,*bounds)
 
-    return type(self)(new_pos,self.__wi,self.__wa,self.__wc,self.__v,self.__P, temp=self.__temp+1)
+    return type(self)(new_pos,self.__wi,self.__wa,self.__wc,self.__v,self.__P)
 
+
+class IndividualCDEEPSO(Individual):
+  def __init__(self,X,wi0=0.5,wa0=0.5,wc0=0.5,v=None,p=None):
+    self.setPosition(X)
+    self.__wi = wi0
+    self.__wa = wa0
+    self.__wc = wc0
+    self.__P = p
+    self.__v = v
+
+  def to_dict(self):
+    out = {}
+    out["X"] = self._X
+    out["Z"] = self._current_min
+    out["V"] = self.__v
+    return out
+
+  def mutation_w(self,w, tmut, wBounds):
+    w = np.clip(w + tmut*np.random.normal(),wBounds[0],wBounds[1])
+    return w
+
+  def rand_1(self,gb_wrapper,rand0, rand1, rand2, tmut, tcom,F, bounds=None, vBounds=None, wBounds=None):
+    if self.getFitness() < self._fitness_function(self.__P):
+      self.__P = self._X
+      if self.getFitness() < gb_wrapper[0].getFitness():
+        gb_wrapper[0] = self
+        return self
+
+    C = np.random.random_sample(size=len(self._X))
+    for i in range(0,len(C)):
+      if C[i] < tcom:
+        C[i] = 1
+      else:
+        C[i] = 0
+
+    # Ws
+    self.__wi = self.mutation_w(self.__wi,tmut, wBounds)
+    self.__wa = self.mutation_w(self.__wa,tmut, wBounds)
+    self.__wc = self.mutation_w(self.__wc,tmut, wBounds)
+
+    # parameters
+    Xst = rand0._X + F*(gb_wrapper[0]._X-rand0._X) + F*(rand1._X-rand2._X)
+    param1 = self.__wa*(Xst -self._X)
+    param2 = self.__wc*C*(gb_wrapper[0]._X - self._X)
+
+    # velocity
+    self.__v = np.clip(self.__v*self.__wi + param1 + param2,*vBounds)
+    # position
+    new_pos = np.clip(self._X + self.__v,*bounds)
+
+    return type(self)(new_pos,self.__wi,self.__wa,self.__wc,self.__v,self.__P)
 
