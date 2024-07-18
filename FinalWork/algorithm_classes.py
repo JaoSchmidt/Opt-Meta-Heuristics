@@ -99,12 +99,6 @@ class LoopDEEPSO(AlgorithmLoop):
       new_generation.append(ind_list[i].xr_mem(gb,memory[rand], self.__tmut, self.__tcom,bounds=self.__pb, vBounds=self.__vb, wBounds=self.__wb))
     return new_generation
 
-  def deepso_recombination(self,ind_list):
-    pass
-
-  def deepso_recombination_memory_best(self,ind_list):
-    pass
-
   def get_description(self):
     return self.__title+", tcom="+str(self.__tcom)+", tmut="+str(self.__tmut)+", wa0="+str(self.__wa0)+", wi0="+str(self.__wi0)+", wc0="+str(self.__wc0)
 
@@ -153,6 +147,8 @@ class LoopCDEEPSO(AlgorithmLoop):
         fun = self.__cdeepso_memory
       case "cdeepso_rand_1":
         fun = self.__cdeepso_rand_1
+      case "cdeepso_recombination":
+        fun = self.__cdeepso_recombination
       case _:
         raise Exception("Unkown experiment name")
     self.__test_function = fun
@@ -189,6 +185,19 @@ class LoopCDEEPSO(AlgorithmLoop):
       sample = random.sample(ind_list, k=1)
       new_generation.append(ind_list[i].memory(gb,memory[rand_best],*sample, self.__tmut, self.__tcom,F=self.__F,bounds=self.__pb, vBounds=self.__vb, wBounds=self.__wb))
     return new_generation
+
+  def __cdeepso_recombination(self,ind_list,gb):
+    mem_size = LoopCDEEPSO.memory_size
+    memory = heapq.nsmallest(mem_size, ind_list, key=lambda x: x.getFitness())
+
+    new_generation = []
+    for i in range(0,len(ind_list)):
+      rand_best = random.randint(0,mem_size-1)
+      #sample = random.sample(ind_list, k=1)
+      new_generation.append(
+          ind_list[i].recombination(gb,memory[rand_best], self.__tmut, self.__tcom,self.__F,bounds=self.__pb, vBounds=self.__vb, wBounds=self.__wb))
+    return new_generation
+
 
   def get_description(self):
     return self.__title+", tcom="+str(self.__tcom)+", tmut="+str(self.__tmut)+", wa0="+str(self.__wa0)+", wi0="+str(self.__wi0)+", wc0="+str(self.__wc0)

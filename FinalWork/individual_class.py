@@ -336,3 +336,48 @@ class IndividualCDEEPSO(Individual):
 
     return type(self)(new_pos,self.__wi,self.__wa,self.__wc,v=self.__v,p=self.__P)
 
+  def __recombination(self,mut_pos):
+    dim = len(self._X)
+    cross_points = np.random.rand(dim) < 0.9#self.__Cr
+    if not np.any(cross_points):
+      cross_points[np.random.randint(0, dim)] = True
+    new_pos = np.where(cross_points,mut_pos,self._X)
+    if self._fitness_function(new_pos) < self.getFitness(): # if created position is better
+      return new_pos
+    else:
+      return self._X
+
+  def recombination(self,gb_wrapper,Ir, tmut, tcom,F, bounds=None, vBounds=None, wBounds=None):
+    if self.getFitness() <= self._fitness_function(self.__P):
+      self.__P = self._X
+      if self.getFitness() <= gb_wrapper[0].getFitness():
+        gb_wrapper[0] = self
+        return self
+
+    C = np.random.random_sample(size=len(self._X))
+    for i in range(0,len(C)):
+      if C[i] < tcom:
+        C[i] = 1
+      else:
+        C[i] = 0
+
+    # Ws
+    self.__wi = self.mutation_w(self.__wi,tmut, wBounds)
+    self.__wa = self.mutation_w(self.__wa,tmut, wBounds)
+    self.__wc = self.mutation_w(self.__wc,tmut, wBounds)
+
+    # parameters
+    Xst = self.__P + F*(Ir._X-self.__P) #+ F*(rand1._X-rand2._X)
+    param1 = self.__wa*(Xst -self._X)
+    param2 = self.__wc*C*(gb_wrapper[0]._X - self._X)
+
+    # velocity
+    self.__v = np.clip(self.__v*self.__wi + param1 + param2,*vBounds)
+
+    # position
+    new_pos = np.clip(self._X + self.__v,*bounds)
+
+    new_pos = self.__recombination(new_pos)
+
+    return type(self)(new_pos,self.__wi,self.__wa,self.__wc,v=self.__v,p=self.__P)
+
