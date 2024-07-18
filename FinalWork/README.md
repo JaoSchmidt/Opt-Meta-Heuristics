@@ -1,3 +1,13 @@
+# Install
+``` bash
+pip install numpy pandas
+```
+## Running
+``` bash
+jupyter notebook
+```
+
+
 # Short resume
 
 Again, all experiments inside `main.ipynb`, most other files are self-explanatory, as they were for the PSO.
